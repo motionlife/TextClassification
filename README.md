@@ -1,3 +1,3 @@
 # TextClassification
 Naive Bayes and Logistic Regression methods used in Textclassification.
-## Intelij Idea Project
+## Code should be imported into Intellij Idea
