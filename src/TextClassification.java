@@ -41,7 +41,7 @@ public class TextClassification {
 
         //--------------Logistic Regression Classifier--------------
         start = System.nanoTime();
-        batchGradient(toVectors(TRAIN_PATH, false), 0.1, 20, 0.0001);//batchGradient(0.0001, 40.01, 0.0001);
+        incrementalGradient(toVectors(TRAIN_PATH, false), 0.01, 78);//batchGradient(0.0001, 40.01, 0.0001);
         System.out.println("Accuracy of Logistic Regression: " + testLRAccuracy(toVectors(TEST_PATH, false)));
         System.out.println("Time consumption: " + (System.nanoTime() - start) * 1.0e-9);
 
@@ -93,19 +93,6 @@ public class TextClassification {
             e.printStackTrace();
         }
         return detected[type];
-    }
-
-    /**
-     * Print out the entire map, a debug function
-     */
-    private static void printMap(Map mp) {
-        for (Object o : mp.entrySet()) {
-            Map.Entry pair = (Map.Entry) o;
-            String word = (String) pair.getKey();
-            double[] values = (double[]) pair.getValue();
-            System.out.println(word + " = " + values[HAM] + "," + values[SPAM]);
-            //it.remove(); // avoids a ConcurrentModificationException
-        }
     }
 
     /**
@@ -275,15 +262,14 @@ public class TextClassification {
         boolean[] converged = new boolean[size];
         int i = 0, j = 0;
         //Repeat until W in all dimension are "converged"
-        while (j < 1000) {
+        while (j < 200) {
             if (!converged[i]) {
                 double derivative = 0;
                 for (TextVector tv : vectors) {
                     if (tv.features[i] != 0) derivative += tv.features[i] * tv.predictError(W);
                 }
-
-                derivative = learningRate * (derivative - lambda * W[i]);
-                W_temp[i] = W[i] + derivative;
+                derivative -= lambda * W[i];
+                W_temp[i] += learningRate * derivative;
                 //when the derivative of this dimension is in this range we think it's "converged"
                 if (derivative < tolerance && derivative > -1 * tolerance) {
                     converged[i] = true;
@@ -294,10 +280,29 @@ public class TextClassification {
                 }
             }
             if (++i == size) {
-                i = 0;//reset i to start another round
-                System.out.println("Round: " + ++j);
-                //update wi simultaneously
+                i = 0;
+                j++;
                 System.arraycopy(W_temp, 0, W, 0, size);
+            }
+        }
+    }
+
+    /**
+     * MAP estimateType the parameters of Logistic Regression through incremental gradient ascent
+     *
+     * @param learningRate the learning rate in gradient ascent
+     * @param lambda       the penalty strength
+     */
+    private static void incrementalGradient(ArrayList<TextVector> vectors, double learningRate, double lambda) {
+        int size = dictionary.size() + 1;
+        W = new double[size];//initially set all w=0
+        for (int i = 0; i < size; i++) {
+            for (TextVector tv : vectors) {
+                double derivative = 0;
+                if (tv.features[i] != 0) {
+                    derivative = tv.features[i] * tv.predictError(W);
+                }
+                W[i] += learningRate * (derivative - lambda * W[i]);
             }
         }
     }
@@ -306,11 +311,11 @@ public class TextClassification {
      * Test the accuracy of Logistic Regression method
      */
     private static double testLRAccuracy(ArrayList<TextVector> test_vectors) {
-        int detected = 0;
+        int correct = 0;
         for (TextVector tv : test_vectors) {
-            if (tv.estimateType(W) == tv.type) detected++;
+            if (tv.estimateType(W) == tv.type) correct++;
         }
-        return (double) detected / (numberOfTestFiles[HAM] + numberOfTestFiles[SPAM]);
+        return (double) correct / (numberOfTestFiles[HAM] + numberOfTestFiles[SPAM]);
     }
 
     private static void testMemory() {
@@ -364,7 +369,7 @@ class TextVector {
         for (int i = 0; i < W.length; i++) {
             if (features[i] != 0) sum += W[i] * features[i];
         }
-        //System.out.println(sum + ": " + type);
+        System.out.println(sum + ": " + type);
         return sum > 0 ? TextClassification.HAM : TextClassification.SPAM;
     }
 
