@@ -36,13 +36,13 @@ public class TextClassification {
         long start = System.nanoTime();
         TrainMultinomialNB(TRAIN_PATH, false);
         System.out.println("Accuracy of Naive Bayes: " + testNBAccuracy(TEST_PATH, false));
-        System.out.println("Time consumption: " + (System.nanoTime() - start) * 1.0e-9);
+        System.out.println("Time consumption(s): " + (System.nanoTime() - start) * 1.0e-9);
 
         //-----------------------------Logistic Regression Classifier---------------------
         start = System.nanoTime();
         incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, false)), 0.0001, 35);
         System.out.println("Accuracy of Logistic Regression: " + testLRAccuracy(toVectors(TEST_PATH, false)));
-        System.out.println("Time consumption: " + (System.nanoTime() - start) * 1.0e-9);
+        System.out.println("Time consumption(s): " + (System.nanoTime() - start) * 1.0e-9);
 
         //---------------------------------Remove the Stop Words---------------------------
         initialize();
