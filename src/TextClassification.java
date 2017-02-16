@@ -32,30 +32,25 @@ public class TextClassification {
     public static void main(String args[]) {
         dictionary = new LinkedHashMap<>();
 
-        //-----------------Naive Bayes Classifier--------------
+        //-------------------------------Naive Bayes Classifier---------------------------
         long start = System.nanoTime();
         TrainMultinomialNB(TRAIN_PATH, false);
         System.out.println("Accuracy of Naive Bayes: " + testNBAccuracy(TEST_PATH, false));
         System.out.println("Time consumption: " + (System.nanoTime() - start) * 1.0e-9);
-        //printMap(dictionary);
 
-        //--------------Logistic Regression Classifier--------------
+        //-----------------------------Logistic Regression Classifier---------------------
         start = System.nanoTime();
-        incrementalGradient(toVectors(TRAIN_PATH, false), 0.01, 78);//batchGradient(0.0001, 40.01, 0.0001);
+        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, false)), 0.0001, 35);
         System.out.println("Accuracy of Logistic Regression: " + testLRAccuracy(toVectors(TEST_PATH, false)));
         System.out.println("Time consumption: " + (System.nanoTime() - start) * 1.0e-9);
 
-        //for (double w : W) {System.out.println(w);}
-        testMemory();
-        System.exit(0);
-
-        //----------------Remove the Stop Words------------------
+        //---------------------------------Remove the Stop Words---------------------------
         initialize();
         stop_words = Arrays.asList(STOP_WORDS);
         TrainMultinomialNB(TRAIN_PATH, true);
         System.out.println("Naive Bayes without S.W.: " + testNBAccuracy(TEST_PATH, true));
 
-        batchGradient(toVectors(TRAIN_PATH, true), 0.05, 40.009, 0.01);
+        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, true)), 0.0001, 35);
         System.out.println("Logistic Regression without S.W.: " + testLRAccuracy(toVectors(TEST_PATH, true)));
 
         testMemory();
@@ -222,8 +217,8 @@ public class TextClassification {
             paths.forEach(filePath -> {
                 if (Files.isRegularFile(filePath)) {
                     String line;
-                    byte[] features = new byte[word_list.size() + 1];
-                    features[0] = 1;    // set x0=1 for all vector X
+                    float[] features = new float[word_list.size() + 1];
+                    features[0] = 1;    // set x0=1 for all vectorNormalize X
                     try (BufferedReader br = new BufferedReader(new FileReader(filePath.toFile()))) {
                         while ((line = br.readLine()) != null) {
                             String[] words = line.split(" ");
@@ -246,6 +241,16 @@ public class TextClassification {
         }
     }
 
+    private static ArrayList<TextVector> vectorNormalize(ArrayList<TextVector> textVectors) {
+        int size = dictionary.size() + 1;
+        for (int i = 0; i < size; i++) {
+            float sum = 0;
+            for (TextVector tv : textVectors) sum += tv.features[i];
+            for (TextVector tv : textVectors) tv.features[i] /= sum;
+        }
+        return textVectors;
+    }
+
     /**
      * MAP estimateType the parameters of Logistic Regression through batch gradient ascent
      *
@@ -254,7 +259,7 @@ public class TextClassification {
      * @param tolerance    the converge threshold
      */
     private static void batchGradient(ArrayList<TextVector> vectors, double learningRate, double lambda, double tolerance) {
-        //vector size
+        //vectorNormalize size
         int size = dictionary.size() + 1;
         int cvs = 0;
         W = new double[size];//initially set all w=0
@@ -266,12 +271,12 @@ public class TextClassification {
             if (!converged[i]) {
                 double derivative = 0;
                 for (TextVector tv : vectors) {
-                    if (tv.features[i] != 0) derivative += tv.features[i] * tv.predictError(W);
+                    if (tv.features[i] != 0) derivative += tv.features[i] * tv.predictionError(W);
                 }
                 derivative -= lambda * W[i];
                 W_temp[i] += learningRate * derivative;
                 //when the derivative of this dimension is in this range we think it's "converged"
-                if (derivative < tolerance && derivative > -1 * tolerance) {
+                if (-tolerance < derivative && derivative < tolerance) {
                     converged[i] = true;
                     if (++cvs == size) {
                         System.arraycopy(W_temp, 0, W, 0, size);
@@ -282,6 +287,7 @@ public class TextClassification {
             if (++i == size) {
                 i = 0;
                 j++;
+                System.out.println("ROUND: " + j);
                 System.arraycopy(W_temp, 0, W, 0, size);
             }
         }
@@ -296,12 +302,11 @@ public class TextClassification {
     private static void incrementalGradient(ArrayList<TextVector> vectors, double learningRate, double lambda) {
         int size = dictionary.size() + 1;
         W = new double[size];//initially set all w=0
-        for (int i = 0; i < size; i++) {
-            for (TextVector tv : vectors) {
+        for (TextVector tv : vectors) {
+            for (int i = 0; i < size; i++) {
                 double derivative = 0;
-                if (tv.features[i] != 0) {
-                    derivative = tv.features[i] * tv.predictError(W);
-                }
+                //update the parameters according to prediction error with respect to this single training example only.
+                if (tv.features[i] != 0) derivative = tv.features[i] * tv.predictionError(W);
                 W[i] += learningRate * (derivative - lambda * W[i]);
             }
         }
@@ -348,15 +353,15 @@ public class TextClassification {
  */
 class TextVector {
     //key: the index of the word in dictionary, value the number of the word
-    public byte[] features;
+    public float[] features;
     public int type;
 
-    TextVector(byte[] fts, int tp) {
+    TextVector(float[] fts, int tp) {
         features = fts;
         type = tp;
     }
 
-    double predictError(double[] W) {
+    double predictionError(double[] W) {
         double sum = 0;
         for (int i = 0; i < W.length; i++) {
             if (features[i] != 0) sum += W[i] * features[i];
@@ -369,8 +374,7 @@ class TextVector {
         for (int i = 0; i < W.length; i++) {
             if (features[i] != 0) sum += W[i] * features[i];
         }
-        System.out.println(sum + ": " + type);
-        return sum > 0 ? TextClassification.HAM : TextClassification.SPAM;
+        return sum < 0 ? TextClassification.HAM : TextClassification.SPAM;
     }
 
 }
