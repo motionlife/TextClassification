@@ -6,6 +6,7 @@ If you don't use intellij idea, just put the TextClassification.java and dataset
  to compile the source code and use: 
  `java TextClassification`
  to execute the program.<br/>
+ <br/>
  ### Output learningRate=0.0001, lambda=35;
   Accuracy of Naive Bayes: 0.9476987447698745<br/>
   Time consumption: 0.524632992<br/>
