@@ -67,6 +67,8 @@ public class TextClassification {
         numberOfTestFiles[SPAM] = 0;
     }
 
+    /***===============================Methods that used for Naive Bayes===========================**/
+
     private static double testNBAccuracy(String[] folders, boolean filter) {
         int ham = testNB(folders, HAM, filter);
         int spam = testNB(folders, SPAM, filter);
