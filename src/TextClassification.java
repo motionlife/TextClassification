@@ -40,7 +40,7 @@ public class TextClassification {
 
         //-----------------------------Logistic Regression Classifier---------------------
         start = System.nanoTime();
-        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, false)), 0.0001, 35);
+        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, false)), 0.001, 3.5);
         System.out.println("Accuracy of Logistic Regression: " + testLRAccuracy(toVectors(TEST_PATH, false)));
         System.out.println("Time consumption(s): " + (System.nanoTime() - start) * 1.0e-9);
 
@@ -50,7 +50,7 @@ public class TextClassification {
         TrainMultinomialNB(TRAIN_PATH, true);
         System.out.println("Naive Bayes without S.W.: " + testNBAccuracy(TEST_PATH, true));
 
-        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, true)), 0.0001, 35);
+        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, true)), 0.001, 3.5);
         System.out.println("Logistic Regression without S.W.: " + testLRAccuracy(toVectors(TEST_PATH, true)));
 
         testMemory();
