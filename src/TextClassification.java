@@ -40,7 +40,7 @@ public class TextClassification {
 
         //-----------------------------Logistic Regression Classifier---------------------
         start = System.nanoTime();
-        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, false)), 0.001, 3.5);
+        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, false)), 0.001, 3.5, 1);
         System.out.println("Accuracy of Logistic Regression: " + testLRAccuracy(toVectors(TEST_PATH, false)));
         System.out.println("Time consumption(s): " + (System.nanoTime() - start) * 1.0e-9);
 
@@ -50,7 +50,7 @@ public class TextClassification {
         TrainMultinomialNB(TRAIN_PATH, true);
         System.out.println("Naive Bayes without S.W.: " + testNBAccuracy(TEST_PATH, true));
 
-        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, true)), 0.001, 3.5);
+        incrementalGradient(vectorNormalize(toVectors(TRAIN_PATH, true)), 0.001, 3.5, 1);
         System.out.println("Logistic Regression without S.W.: " + testLRAccuracy(toVectors(TEST_PATH, true)));
 
         testMemory();
@@ -301,15 +301,17 @@ public class TextClassification {
      * @param learningRate the learning rate in gradient ascent
      * @param lambda       the penalty strength
      */
-    private static void incrementalGradient(ArrayList<TextVector> vectors, double learningRate, double lambda) {
+    private static void incrementalGradient(ArrayList<TextVector> vectors, double learningRate, double lambda, int repeat) {
         int size = dictionary.size() + 1;
         W = new double[size];//initially set all w=0
-        for (TextVector tv : vectors) {
-            for (int i = 0; i < size; i++) {
-                double derivative = 0;
-                //update the parameters according to prediction error with respect to this single training example only.
-                if (tv.features[i] != 0) derivative = tv.features[i] * tv.predictionError(W);
-                W[i] += learningRate * (derivative - lambda * W[i]);
+        while (repeat-- > 0) {
+            for (TextVector tv : vectors) {
+                for (int i = 0; i < size; i++) {
+                    double derivative = 0;
+                    //update the parameters according to prediction error with respect to this single training example only.
+                    if (tv.features[i] != 0) derivative = tv.features[i] * tv.predictionError(W);
+                    W[i] += learningRate * (derivative - lambda * W[i]);
+                }
             }
         }
     }
