@@ -7,7 +7,7 @@ If you don't use intellij idea, just put the TextClassification.java and dataset
  `java TextClassification`<br/>
  to execute the program.<br/>
 ## Output example
-  learningRate=0.001, lambda=3.5;<br/>
+  learningRate=0.01, lambda=0.35;<br/>
   `Accuracy of Naive Bayes: 0.9476987447698745`<br/>
   `Time consumption(s): 0.373273224`<br/>
   `Accuracy of Logistic Regression: 0.9560669456066946`<br/>
