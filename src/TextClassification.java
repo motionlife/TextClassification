@@ -188,7 +188,7 @@ public class TextClassification {
     }
 
     /***
-     * Return the number of files in a given folder github
+     * Return the number of files in a given folder
      */
     private static int countFileNumbers(String folder) {
         //noinspection ConstantConditions
